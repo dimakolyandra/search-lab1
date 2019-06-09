@@ -4,14 +4,22 @@ from utils import get_page_ids_for_termin, get_page_by_id
 
 class SearchEngine:
 
+    PAGE_COUNT = 50000
+
     class SearchResult:
 
-        def __init__(self, data):
+        def __init__(self, data, is_not=False):
             if type(data) == str:
-                self.dock_ids = get_page_ids_for_termin(data)
+                dock_ids = get_page_ids_for_termin(data)
+                if is_not:
+                    dock_ids = set(range(SearchEngine.PAGE_COUNT)) - dock_ids
+                self.dock_ids = dock_ids
 
             elif type(data) == set:
-                self.dock_ids = data
+                if is_not:
+                    self.dock_ids = set(range(SearchEngine.PAGE_COUNT)) - data
+                else:
+                    self.dock_ids = data
 
         def __and__(self, another):
             return SearchEngine.SearchResult(self.dock_ids & another.dock_ids)
@@ -62,6 +70,8 @@ class SearchEngine:
                         if stack_head == "(":
                             break
                         result.append(stack_head)
+                elif item == "!":
+                    stack.append(item)
                 elif item in cls.PRIORITY.keys():
                     if term_buf:
                         result.append(term_buf)
@@ -118,7 +128,12 @@ class SearchEngine:
         stack = list()
         for item in request_stack:
             if item.isalpha():
-                stack.append(cls.SearchResult(item))
+                stack.append(cls.SearchResult(item.lower()))
+                continue
+
+            if item == "!":
+                e = stack.pop()
+                stack.append(cls.SearchResult(e.dock_ids, is_not=True))
                 continue
 
             a = stack.pop()
@@ -140,8 +155,13 @@ if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("Enter search request ... ")
         exit(0)
-
-    # print(SearchEngine.SearchRequest._prepare_request(sys.argv[1]))
     response = SearchEngine.search(sys.argv[1])
+    res_dict = {}
     for record in response:
         print(record)
+        res_dict[record['title']] = record
+
+    with open(sys.argv[1], 'wb') as f:
+        import pickle
+        pickle.dump(res_dict, f)
+

@@ -57,5 +57,6 @@ def get_page_by_id(dock_id):
 
                 return {
                     "title": right_index.read(title_size).decode('utf-8'),
-                    "url": right_index.read(url_size).decode('utf-8')
+                    "url": right_index.read(url_size).decode('utf-8'),
+                    "id": dock_id
                 }
