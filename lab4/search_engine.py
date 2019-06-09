@@ -1,3 +1,4 @@
+import re
 from utils import get_page_ids_for_termin, get_page_by_id
 
 
@@ -19,9 +20,10 @@ class SearchEngine:
             return SearchEngine.SearchResult(self.dock_ids | another.dock_ids)
 
         def __iter__(self):
-            docks = [get_page_by_id(dock_id) for dock_id in self.dock_ids]
+            docks = list()
+            if self.dock_ids:
+                docks = [get_page_by_id(dock_id) for dock_id in self.dock_ids]
             return iter(docks)
-
 
     class SearchRequest:
         
@@ -88,15 +90,27 @@ class SearchEngine:
         def _prepare_request(request: str) -> str:
             result_request = []
             prev = ''
-            for c in request:
-                if prev == ' ' and c == ' ':
-                    continue
-                result_request.append(c)
-                prev = c
-            return (''.join(result_request).strip()
-                      .replace(' ', '&')
-                      .replace('&&', '&')
-                      .replace('||', '|'))
+            request = (request
+                .replace('(', ' ( ')
+                .replace(')', ' ) ')
+                .replace('&&', ' && ')
+                .replace('||', ' || ')
+                .replace('!', ' ! '))
+
+            res = list(filter(None, re.findall(r'[^\s]*', request)))
+            for i in range(len(res) - 1):
+                result_request.append(res[i])
+                if (res[i + 1] != "&&" and 
+                        (res[i + 1].isalpha() or 
+                            res[i + 1] == "(" or 
+                            res[i + 1] == "!") and 
+                        res[i] != "(" and 
+                        res[i] != "||" and 
+                        res[i] != "&&" and
+                        res[i] != "!"):
+                    result_request.append("&&")
+            result_request.append(res[-1])
+            return ''.join(result_request).replace('||', '|').replace('&&', '&')
 
     @classmethod
     def search(cls, request: str) -> SearchResult:
@@ -127,6 +141,7 @@ if __name__ == "__main__":
         print("Enter search request ... ")
         exit(0)
 
+    # print(SearchEngine.SearchRequest._prepare_request(sys.argv[1]))
     response = SearchEngine.search(sys.argv[1])
     for record in response:
         print(record)
