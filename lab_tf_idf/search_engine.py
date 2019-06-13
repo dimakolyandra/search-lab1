@@ -55,12 +55,13 @@ class SearchEngine:
                         tf_idf += find_tf(token, dock_id) * idf.get(token, 0)
                     docks.append((dock_id, tf_idf))
                 docks = sorted(docks, key=lambda x: x[1], reverse=True)
-                docks = [(get_page_by_id(dock_id[0]), dock_id[1]) for dock_id in docks]
+                docks = ((get_page_by_id(dock_id[0]), dock_id[1]) for dock_id in docks)
             return iter(docks)
 
     class SearchRequest:
         
         PRIORITY = {
+            "!": 3,
             "&": 2,
             "|": 2,
             "(": 1,
@@ -123,6 +124,9 @@ class SearchEngine:
 
         @staticmethod
         def _prepare_request(request: str) -> str:
+            if '&' not in request and '|' not in request and '!' not in request:
+                res = list(filter(None, re.findall(r'[^\s]*', request)))
+                return '|'.join(res)
             result_request = []
             prev = ''
             request = (request
@@ -150,7 +154,7 @@ class SearchEngine:
     @classmethod
     def search(cls, request: str) -> SearchResult:
         request_stack = cls.SearchRequest.get_request(request)
-        print(request_stack)
+        # print(request_stack)
         stack = list()
         for item in request_stack:
             if item.isalpha():
@@ -188,11 +192,14 @@ if __name__ == "__main__":
     # for record in response:
     #     print(record)
     #     print("=================")
-
+    i = 0
     for record, rel in response:
+        if i == 5:
+            break
         print(record)
         print(rel)
         print("=================")
+        i += 1
         # res_dict[record['title']] = record
 
     # with open(sys.argv[1], 'wb') as f:
