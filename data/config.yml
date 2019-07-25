@@ -1,0 +1,10 @@
+preprocessing:
+  page:
+    start_subst: ==========START_PAGE==========
+    end_subst: ==========END_PAGE==========
+    title:
+      start_subst: ++++++++++START_PAGE_TITLE++++++++++
+      end_subst: ++++++++++END_PAGE_TITLE++++++++++
+    text:
+      start_subst: ++++++++++START_PAGE_TEXT++++++++++
+      end_subst: ++++++++++END_PAGE_TEXT++++++++++

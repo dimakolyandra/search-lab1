@@ -1,7 +1,5 @@
 import os
 import re
-import pprint
-import json
 import mwparserfromhell
 from xml.etree import ElementTree
 
@@ -9,6 +7,7 @@ from xml.etree import ElementTree
 error_counter = 0
 success_counter = 0
 file_dir = os.path.dirname(os.path.realpath('__file__'))
+
 
 def get_need_categories():
     cats = set()
@@ -30,9 +29,20 @@ def get_categories(page):
     return result
 
 
+def write_to_file(file, title, success_counter, text_counter, text):
+    print(f"Succes page: {success_counter} from {text_counter}")
+    file.write("=" * 10 + "START_PAGE" + "=" * 10 + "\n")
+    file.write("+" * 10 + "START_PAGE_TITLE" + "+" * 10 + "\n")
+    file.write(title + "\n")
+    file.write("+" * 10 + "END_PAGE_TITLE" + "+" * 10 + "\n")
+    file.write("+" * 10 + "START_PAGE_TEXT" + "+" * 10 + "\n")
+    file.write(text + "\n")
+    file.write("+" * 10 + "END_PAGE_TEXT" + "+" * 10 + "\n")
+    file.write("=" * 10 + "END_PAGE" + "=" * 10 + "\n")
+
+
 def read_xml(file, need_cats):
     global success_counter
-    stats_dict = dict()
     text_counter = 1
     with open(file) as read:
         with open("result-pages-pretty.txt", "a+") as write:
@@ -50,23 +60,17 @@ def read_xml(file, need_cats):
                     for cat in page_cats:
                         if cat in need_cats:
                             code = mwparserfromhell.parse(text)
-                            text = code.strip_code()    
+                            text = code.strip_code()
                             success_counter += 1
-                            print(f"Succes pages: {success_counter} from {text_counter}")
-                            write.write("="*10 + "START_PAGE" + "="*10 + "\n")
-                            write.write("+"*10 + "START_PAGE_TITLE" + "+"*10 + "\n")
-                            write.write(title + "\n")
-                            write.write("+"*10 + "END_PAGE_TITLE" + "+"*10 + "\n")
-                            write.write("+"*10 + "START_PAGE_TEXT" + "+"*10 + "\n")
-                            write.write(text + "\n")
-                            write.write("+"*10 + "END_PAGE_TEXT" + "+"*10 + "\n")
-                            write.write("="*10 + "END_PAGE" + "="*10 + "\n")
+                            write_to_file(
+                                write, title,
+                                success_counter, text_counter, text)
                     text = title = None
 
                 if text_counter % 50000 == 0:
                     print(f"Parsed: {text_counter} pages")
                     text_counter += 1
-                
+
                 if success_counter == 50000:
                     break
 
