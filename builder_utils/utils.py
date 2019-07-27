@@ -1,8 +1,10 @@
 import logging
 import yaml
+import unittest
 
 from functools import wraps
 from datetime import datetime
+from importlib import import_module
 
 
 def load_yml(file):
@@ -32,3 +34,19 @@ def timer_debug(func, *args, **kwargs):
     t2 = datetime.now()
     logging.debug(f"Function {func.__name__} takes: {t2 - t1} time")
     return res
+
+
+def run_test_for_stage(stage_name):
+    try:
+        test_module = import_module(f"{stage_name}.test")
+    except ModuleNotFoundError:
+        logging.debug(f"There is no tests for stage: {stage_name}")
+        return True
+    else:
+        suite = unittest.TestLoader().loadTestsFromModule(test_module)
+        test_results = unittest.TextTestRunner(verbosity=1).run(suite)
+        if test_results.failures:
+            return False
+        if test_results.errors:
+            return False
+        return True
