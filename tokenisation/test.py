@@ -31,13 +31,14 @@ class TestTokenisation(unittest.TestCase):
                              if value["id"] in pages_id}
         for title, page in random_tokens.items():
             for token in page["tokens"]:
-                with self.subTest(token=token, page_title=title):
+                with self.subTest(
+                        token=token[0].decode('utf-8'), page_title=title):
                     self.assertEqual(
                         page["id"], random_pages[page["id"]]["id"])
                     self.assertEqual(
                         title, random_pages[page["id"]]["title"])
                     text = random_pages[page["id"]]["text"]
-                    self.assertIn(token[0], text)
+                    self.assertIn(token[0].decode('utf-8'), text)
 
 
 if __name__ == "__main__":

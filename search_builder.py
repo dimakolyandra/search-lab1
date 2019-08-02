@@ -5,14 +5,15 @@ from argparse import ArgumentParser
 from builder_utils import run_test_for_stage
 
 
-STAGE_INDEXING = ["preprocessing", "tokenisation", "building_index"]
+STAGE_INDEXING = ["preprocessing", "tokenisation",
+                  "build_inverse", "build_right"]
 
 INDEXING_CONSTANTS = {
     "data_dir": os.path.join(
         os.path.dirname(os.path.abspath(__file__)), "data"),
     "stages": STAGE_INDEXING,
     "input_file_name": "data.in",
-    "config_file_name": "config.yml"
+    "config_file_name": "config.yml",
 }
 
 
@@ -32,6 +33,10 @@ def _init_argparser() -> ArgumentParser:
         "--withtests", "-w",
         help="Run tests after stage finishing",
         action="store_true")
+    parser.add_argument(
+        "--onlytests", "-o",
+        help="Run tests after stage finishing",
+        action="store_true")
     parser.add_argument("--loglvl", "-l", help=f"Logging level")
     return parser
 
@@ -49,7 +54,9 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     logging_lvl = args.loglvl or "info"
-    logging.basicConfig(level=getattr(logging, logging_lvl.upper()))
+    logging.basicConfig(
+        level=getattr(logging, logging_lvl.upper()),
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     try:
         stage_target_id = STAGE_INDEXING.index(args.stage)
     except ValueError:
@@ -61,10 +68,12 @@ if __name__ == "__main__":
         stage_gen = enumerate(
             STAGE_INDEXING[:stage_target_id + 1])
         for stage_id, stage in stage_gen:
-            module = import_module(stage)
-            module.run(INDEXING_CONSTANTS, stage_id)
+            if not args.onlytests:
+                module = import_module(stage)
+                module.run(INDEXING_CONSTANTS, stage_id)
             handle_stage_tests(stage)
     else:
-        module = import_module(args.stage)
-        module.run(INDEXING_CONSTANTS, stage_target_id)
-        handle_stage_tests(stage)
+        if not args.onlytests:
+            module = import_module(args.stage)
+            module.run(INDEXING_CONSTANTS, stage_target_id)
+        handle_stage_tests(args.stage)

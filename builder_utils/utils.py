@@ -1,13 +1,14 @@
 import logging
 import yaml
 import unittest
+import os
 
 from functools import wraps
 from datetime import datetime
 from importlib import import_module
 
 
-def load_yml(file):
+def load_yml(file: str) -> dict:
     with open(file) as stream:
         try:
             return yaml.safe_load(stream)
@@ -36,7 +37,7 @@ def timer_debug(func, *args, **kwargs):
     return res
 
 
-def run_test_for_stage(stage_name):
+def run_test_for_stage(stage_name: str) -> bool:
     try:
         test_module = import_module(f"{stage_name}.test")
     except ModuleNotFoundError:
@@ -50,3 +51,23 @@ def run_test_for_stage(stage_name):
         if test_results.errors:
             return False
         return True
+
+
+def init_stage(consts: dict, stage_id: int, with_logging: bool = True):
+    stage_name = consts["stages"][stage_id]
+
+    if stage_id == 0:
+        in_path = os.path.join(consts["data_dir"], consts["input_file_name"])
+        out_path = os.path.join(consts["data_dir"], f"{stage_name}.out")
+    else:
+        stage_prev = consts["stages"][stage_id - 1]
+        logging.debug(f"Previous stage is {stage_prev}")
+
+        in_path = os.path.join(consts["data_dir"], f"{stage_prev}.out")
+        out_path = os.path.join(consts["data_dir"], f"{stage_name}.out")
+
+    if with_logging:
+        logging.debug(f"Input file path {in_path}")
+        logging.debug(f"Output file path {out_path}")
+
+    return in_path, out_path
