@@ -5,9 +5,6 @@ import unittest
 import pickle
 
 
-LOGGING_INTERVAL = 100
-
-
 class TestBuildingIndex(unittest.TestCase):
 
     @classmethod
@@ -20,7 +17,6 @@ class TestBuildingIndex(unittest.TestCase):
         cls.INVERSE_FILE = os.path.join(data_folder, 'inverse.out')
         cls.DICT_FILE = os.path.join(data_folder, 'dict.out')
         cls.SIZE_OF_RECORD = 40
-        # cls.PAGES_INDS = range(1, 1000, 100)
         cls.PAGES_INDS = range(1, 50001, 2500)
 
     def read_dock_ids(self, dict_, offset, count):
