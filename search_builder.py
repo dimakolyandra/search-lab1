@@ -14,6 +14,8 @@ INDEXING_CONSTANTS = {
     "stages": STAGE_INDEXING,
     "input_file_name": "data.in",
     "config_file_name": "config.yml",
+    "size_of_record": 40,
+    "size_of_record_right": 10
 }
 
 
