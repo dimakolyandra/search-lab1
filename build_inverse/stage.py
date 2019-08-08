@@ -9,7 +9,7 @@ from builder_utils import stage_logging, timer_debug, init_stage
 LOGGING_INTERVAL = 100000
 
 
-def save_tokens(token, docs, index_file, dict_file, offset):
+def save_tokens(token, docs, index_file, dict_file, offset, tf, df):
     token_hash = hashlib.md5(token.encode()).hexdigest()
     index_file.write(token_hash.encode())
     index_file.write(offset.to_bytes(4, byteorder='big'))
@@ -17,6 +17,10 @@ def save_tokens(token, docs, index_file, dict_file, offset):
     for doc in docs:
         dict_file.write(
             int(doc[0]).to_bytes(2, byteorder='big'))
+        dict_file.write(
+            int(tf[doc[0]]).to_bytes(2, byteorder='big'))
+        dict_file.write(
+            int(df).to_bytes(2, byteorder='big'))
         dict_file.write(
             int(doc[1]).to_bytes(2, byteorder='big'))
 
@@ -39,7 +43,8 @@ def make_inverse_index(in_path, index_path, dict_path):
 
     prev_token = None
     docs = list()
-    offset = i = 0
+    tf = dict()
+    offset = i = df = 0
     with open(index_path, "wb") as index_file, \
             open(dict_path, "wb") as dict_file:
         for tuple_ind, token_tuple in enumerate(tokens):
@@ -48,17 +53,29 @@ def make_inverse_index(in_path, index_path, dict_path):
             if i % LOGGING_INTERVAL == 0:
                 logging.debug(f"Processed {i} tokens from {len(tokens)}")
             i += 1
+
+            if dock_id[0] in tf:
+                tf[dock_id[0]] += 1
+            else:
+                tf[dock_id[0]] = 1
+
             if prev_token is None or token.lower() == prev_token.lower():
                 prev_token = token
                 docs.append(dock_id)
                 continue
             else:
-                save_tokens(prev_token, docs, index_file, dict_file, offset)
-                offset += 4 * len(docs)
+                tf[dock_id[0]] -= 1
+                df = len(set([dock_id for dock_id, _ in docs]))
+                save_tokens(
+                    prev_token, docs,
+                    index_file, dict_file,
+                    offset, tf, df)
+                offset += 8 * len(docs)
                 if tuple_ind != len(tokens) - 1:
                     docs = [dock_id]
+                    tf = {dock_id[0]: 1}
                 prev_token = token
-        save_tokens(prev_token, docs, index_file, dict_file, offset)
+        save_tokens(prev_token, docs, index_file, dict_file, offset, tf, df)
 
 
 @stage_logging

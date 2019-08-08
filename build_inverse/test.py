@@ -17,18 +17,21 @@ class TestBuildingIndex(unittest.TestCase):
         cls.INVERSE_FILE = os.path.join(data_folder, 'inverse.out')
         cls.DICT_FILE = os.path.join(data_folder, 'dict.out')
         cls.SIZE_OF_RECORD = 40
-        cls.PAGES_INDS = range(1, 50001, 2500)
+        cls.PAGES_INDS = range(1, 1000, 2500)
+        # cls.PAGES_INDS = range(1, 50001, 2500)
 
     def read_dock_ids(self, dict_, offset, count):
         dict_.seek(offset)
-        docks = dict_.read(count * 4)
+        docks = dict_.read(count * 8)
         start = 0
         dock_ids = []
         for i in range(count):
             dock_ids.append(
                 int.from_bytes(docks[start:start + 2], byteorder='big'))
             int.from_bytes(docks[start + 2: start + 4], byteorder='big')
-            start += 4
+            int.from_bytes(docks[start + 4: start + 6], byteorder='big')
+            int.from_bytes(docks[start + 6: start + 8], byteorder='big')
+            start += 8
         return dock_ids
 
     def check_token_in_page(

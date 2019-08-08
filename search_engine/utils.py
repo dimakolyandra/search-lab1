@@ -25,15 +25,19 @@ def get_page_ids_for_termin(termin):
                 offset = int.from_bytes(data[32:36], byteorder='big')
                 count = int.from_bytes(data[36:40], byteorder='big')
                 dictionary.seek(offset)
-                docks = dictionary.read(count * 4)
+                docks = dictionary.read(count * 8)
 
                 start = 0
                 for i in range(count):
                     dock_id = int.from_bytes(
                         docks[start:start + 2], byteorder='big')
-                    int.from_bytes(
+                    tf = int.from_bytes(
                         docks[start + 2: start + 4], byteorder='big')
-                    start += 4
+                    df = int.from_bytes(
+                        docks[start + 4: start + 6], byteorder='big')
+                    int.from_bytes(
+                        docks[start + 6: start + 8], byteorder='big')
+                    start += 8
                     result_pages.add(dock_id)
                 return result_pages
 
