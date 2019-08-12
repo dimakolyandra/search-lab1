@@ -1,170 +1,159 @@
 import re
-import json
-import os
-from utils import get_page_ids_for_termin, get_page_by_id
+from math import log
+from builder_utils import get_page_ids_for_termin, get_page_by_id
 
 
-TF_DIR = './index/tf_data'
-IDF_DIR = './index/idf_data'
+class SearchResult:
 
-idf = json.load(open(os.path.join(IDF_DIR, 'idf.data')))
+    PAGE_COUNT = 50000
+    iter_counter = 0
+
+    def __init__(self, data, is_not=False):
+        if type(data) == str:
+            dock_ids = get_page_ids_for_termin(data, with_tf_df=True)
+            if is_not:
+                ids = self._get_dock_ids(dock_ids)
+                ids = set(range(self.PAGE_COUNT)) - ids
+                self.dock_ids = filter(lambda x: x[0] in ids, dock_ids)
+            self.dock_ids = dock_ids
+
+        elif type(data) == set:
+            if is_not:
+                ids = set(range(self.PAGE_COUNT)) - self._get_dock_ids(data)
+                self.dock_ids = filter(lambda x: x[0] in ids, data)
+            else:
+                self.dock_ids = data
+
+    def _get_dock_ids(self, docks=None):
+        docks = docks or self.dock_ids
+        return {dock_id for dock_id, _, _ in docks}
+
+    def __and__(self, another):
+        dock_ids = self._get_dock_ids() & another._get_dock_ids()
+        return SearchResult(
+            set(filter(lambda x: x[0] in dock_ids, self.dock_ids)))
+
+    def __or__(self, another):
+        dock_ids = self._get_dock_ids() | another._get_dock_ids()
+        return SearchResult(
+            set(filter(lambda x: x[0] in dock_ids, self.dock_ids)))
+
+    def __iter__(self):
+        print(f"Found {len(self.dock_ids)} pages")
+        self.dock_ids_list = [(dock_id, tf * log(self.PAGE_COUNT / df + 1))
+                              for dock_id, tf, df in self.dock_ids]
+        self.dock_ids_list.sort(key=lambda x: -x[1])
+        return self
+
+    def __next__(self):
+        if self.iter_counter < len(self.dock_ids_list):
+            self.iter_counter += 1
+            dock_id, tf_idf = self.dock_ids_list[self.iter_counter]
+            return get_page_by_id(dock_id), tf_idf
+        raise StopIteration
 
 
-def find_tf(token, dock_id):
-    with open(os.path.join(TF_DIR, str(dock_id))) as f:
-        for line in f:
-            if line.split(' ')[0] == token:
-                return float(line.split(' ')[1])
-        return 0
+class SearchRequest:
+
+    PRIORITY = {
+        "&": 2,
+        "|": 2,
+        "(": 1,
+        ")": 1,
+        "#": -1
+    }
+
+    def __init__(self, request: str):
+        self.raw_request = request
+
+    def get_request(self) -> list:
+        request = self._prepare_request()
+        if not self.is_valid(request):
+            raise ValueError("Not valid request")
+        return self._get_polish_inverse(request)
+
+    def _get_polish_inverse(self, experssion: str) -> list:
+        items = list(experssion)
+        stack = ["#"]
+        result = list()
+        term_buf = ''
+        for item in items:
+            if item.isalpha():
+                term_buf += item
+            elif item == "(":
+                stack.append(item)
+            elif item == ")":
+                if term_buf:
+                    result.append(term_buf)
+                    term_buf = ''
+                while True:
+                    stack_head = stack.pop()
+                    if stack_head == "(":
+                        break
+                    result.append(stack_head)
+            elif item == "!":
+                stack.append(item)
+            elif item in self.PRIORITY.keys():
+                if term_buf:
+                    result.append(term_buf)
+                    term_buf = ''
+                while True:
+                    stack_head = stack.pop()
+                    if self.PRIORITY[stack_head] < self.PRIORITY[item]:
+                        stack.append(stack_head)
+                        break
+                    result.append(stack_head)
+                stack.append(item)
+
+        if term_buf:
+            result.append(term_buf)
+
+        for i in range(len(stack)):
+            result.append(stack[len(stack) - i - 1])
+
+        return result[:-1]
+
+    def is_valid(self, request: str) -> list:
+        return True
+
+    def _prepare_request(self) -> str:
+        result_request = []
+        request = (self.raw_request.replace('(', ' ( ')
+                       .replace(')', ' ) ')
+                       .replace('&&', ' && ')
+                       .replace('||', ' || ')
+                       .replace('!', ' ! '))
+
+        res = list(filter(None, re.findall(r'[^\s]*', request)))
+        for i in range(len(res) - 1):
+            result_request.append(res[i])
+            if (res[i + 1] != "&&" and
+                    (res[i + 1].isalpha() or
+                        res[i + 1] == "(" or
+                        res[i + 1] == "!") and
+                    res[i] != "(" and
+                    res[i] != "||" and
+                    res[i] != "&&" and
+                    res[i] != "!"):
+                result_request.append("&&")
+        result_request.append(res[-1])
+        return ''.join(result_request).replace('||', '|').replace('&&', '&')
 
 
 class SearchEngine:
 
-    PAGE_COUNT = 49995
-
-    class SearchResult:
-
-        tokens = []
-
-        def __init__(self, data, is_not=False):
-            if type(data) == str:
-                self.tokens.append(data)
-                dock_ids = get_page_ids_for_termin(data)
-                if is_not:
-                    dock_ids = set(range(SearchEngine.PAGE_COUNT)) - dock_ids
-                self.dock_ids = dock_ids
-
-            elif type(data) == set:
-                if is_not:
-                    self.dock_ids = set(range(1, SearchEngine.PAGE_COUNT)) - data
-                else:
-                    self.dock_ids = data
-
-        def __and__(self, another):
-            return SearchEngine.SearchResult(self.dock_ids & another.dock_ids)
-
-        def __or__(self, another):
-            return SearchEngine.SearchResult(self.dock_ids | another.dock_ids)
-
-        def __iter__(self):
-            docks = list()
-            if self.dock_ids:
-                for dock_id in self.dock_ids:
-                    tf_idf = 0
-                    for token in self.tokens:
-                        tf_idf += find_tf(token, dock_id) * idf.get(token, 0)
-                    docks.append((dock_id, tf_idf))
-                docks = sorted(docks, key=lambda x: x[1], reverse=True)
-                docks = ((get_page_by_id(dock_id[0]), dock_id[1]) for dock_id in docks)
-            return iter(docks)
-
-    class SearchRequest:
-        
-        PRIORITY = {
-            "!": 3,
-            "&": 2,
-            "|": 2,
-            "(": 1,
-            ")": 1,
-            "#": -1
-        }
-
-        @classmethod
-        def get_request(cls, request: str) -> list:
-            request  = cls._prepare_request(request)
-            if not cls.is_valid(request):
-                raise ValueError("Not valid request")
-            return cls._get_polish_inverse(request)
-        
-        @classmethod
-        def _get_polish_inverse(cls, experssion: str) -> list:
-            items = list(experssion)
-            stack = ["#"]
-            result = list()
-            term_buf = ''
-            for item in items:
-                if item.isalpha():
-                    term_buf += item
-                elif item == "(":
-                    stack.append(item)
-                elif item == ")":
-                    if term_buf:
-                        result.append(term_buf)
-                        term_buf = ''
-                    while True:
-                        stack_head = stack.pop()
-                        if stack_head == "(":
-                            break
-                        result.append(stack_head)
-                elif item == "!":
-                    stack.append(item)
-                elif item in cls.PRIORITY.keys():
-                    if term_buf:
-                        result.append(term_buf)
-                        term_buf = ''
-                    while True:
-                        stack_head = stack.pop()
-                        if cls.PRIORITY[stack_head] < cls.PRIORITY[item]:
-                            stack.append(stack_head)
-                            break
-                        result.append(stack_head)
-                    stack.append(item)
-
-            if term_buf:
-                result.append(term_buf)
-
-            for i in range(len(stack)):
-                result.append(stack[len(stack) - i - 1])
-
-            return result[:-1]
-
-        @staticmethod
-        def is_valid(request: str) -> list:
-            return True
-
-        @staticmethod
-        def _prepare_request(request: str) -> str:
-            if '&' not in request and '|' not in request and '!' not in request:
-                res = list(filter(None, re.findall(r'[^\s]*', request)))
-                return '|'.join(res)
-            result_request = []
-            prev = ''
-            request = (request
-                .replace('(', ' ( ')
-                .replace(')', ' ) ')
-                .replace('&&', ' && ')
-                .replace('||', ' || ')
-                .replace('!', ' ! '))
-
-            res = list(filter(None, re.findall(r'[^\s]*', request)))
-            for i in range(len(res) - 1):
-                result_request.append(res[i])
-                if (res[i + 1] != "&&" and 
-                        (res[i + 1].isalpha() or 
-                            res[i + 1] == "(" or 
-                            res[i + 1] == "!") and 
-                        res[i] != "(" and 
-                        res[i] != "||" and 
-                        res[i] != "&&" and
-                        res[i] != "!"):
-                    result_request.append("&&")
-            result_request.append(res[-1])
-            return ''.join(result_request).replace('||', '|').replace('&&', '&')
-
-    @classmethod
-    def search(cls, request: str) -> SearchResult:
-        request_stack = cls.SearchRequest.get_request(request)
-        # print(request_stack)
+    @staticmethod
+    def search(request: str) -> SearchResult:
+        request_stack = SearchRequest(request).get_request()
         stack = list()
         for item in request_stack:
             if item.isalpha():
-                stack.append(cls.SearchResult(item.lower()))
+                stack.append(SearchResult(item.lower()))
                 continue
 
             if item == "!":
                 e = stack.pop()
-                e.tokens.pop()
-                stack.append(cls.SearchResult(e.dock_ids, is_not=True))
+                stack.append(SearchResult(e.dock_ids, is_not=True))
                 continue
 
             a = stack.pop()
@@ -177,8 +166,8 @@ class SearchEngine:
                 c = b | a
 
             stack.append(c)
-        e = stack.pop()
-        return e
+
+        return stack.pop()
 
 
 if __name__ == "__main__":
@@ -188,20 +177,11 @@ if __name__ == "__main__":
         print("Enter search request ... ")
         exit(0)
     response = SearchEngine.search(sys.argv[1])
-    # res_dict = {}
-    # for record in response:
-    #     print(record)
-    #     print("=================")
-    i = 0
-    for record, rel in response:
-        if i == 5:
-            break
+    res_dict = {}
+    for record in response:
         print(record)
-        print(rel)
-        print("=================")
-        i += 1
-        # res_dict[record['title']] = record
+        res_dict[record['title']] = record
 
-    # with open(sys.argv[1], 'wb') as f:
-    #     import pickle
-    #     pickle.dump(res_dict, f)
+    with open(sys.argv[1], 'wb') as f:
+        import pickle
+        pickle.dump(res_dict, f)
