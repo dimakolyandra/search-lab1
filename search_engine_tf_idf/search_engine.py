@@ -143,7 +143,7 @@ class SearchRequest:
 class SearchEngine:
 
     @staticmethod
-    def search(request: str) -> SearchResult:
+    def search(request: str, only_count: bool) -> SearchResult:
         request_stack = SearchRequest(request).get_request()
         stack = list()
         for item in request_stack:
@@ -168,20 +168,3 @@ class SearchEngine:
             stack.append(c)
 
         return stack.pop()
-
-
-if __name__ == "__main__":
-    import sys
-
-    if len(sys.argv) < 2:
-        print("Enter search request ... ")
-        exit(0)
-    response = SearchEngine.search(sys.argv[1])
-    res_dict = {}
-    for record in response:
-        print(record)
-        res_dict[record['title']] = record
-
-    with open(sys.argv[1], 'wb') as f:
-        import pickle
-        pickle.dump(res_dict, f)

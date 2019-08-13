@@ -2,7 +2,7 @@ import os
 import logging
 from importlib import import_module
 from argparse import ArgumentParser
-from builder_utils import run_test_for_stage
+from builder_utils import run_test_for_stage, init_logging
 
 
 STAGE_INDEXING = ["preprocessing", "tokenisation",
@@ -54,11 +54,7 @@ def handle_stage_tests(stage):
 if __name__ == "__main__":
     parser = _init_argparser()
     args = parser.parse_args()
-
-    logging_lvl = args.loglvl or "info"
-    logging.basicConfig(
-        level=getattr(logging, logging_lvl.upper()),
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    init_logging(args.loglvl)
     try:
         stage_target_id = STAGE_INDEXING.index(args.stage)
     except ValueError:

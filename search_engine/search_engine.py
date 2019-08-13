@@ -5,6 +5,7 @@ from search_engine.utils import get_page_ids_for_termin, get_page_by_id
 class SearchResult:
 
     PAGE_COUNT = 50000
+    iter_counter = 0
 
     def __init__(self, data, is_not=False):
         if type(data) == str:
@@ -26,11 +27,16 @@ class SearchResult:
         return SearchResult(self.dock_ids | another.dock_ids)
 
     def __iter__(self):
-        docks = []
-        if self.dock_ids:
-            docks = [get_page_by_id(dock_id) for dock_id in self.dock_ids]
-        print(f"Fount {len(docks)} documents")
-        return iter(docks)
+        print(f"Found {len(self.dock_ids)} pages")
+        self.dock_ids_list = list(self.dock_ids)
+        return self
+
+    def __next__(self):
+        if self.iter_counter < len(self.dock_ids):
+            self.iter_counter += 1
+            dock_id = self.dock_ids_list[self.iter_counter]
+            return get_page_by_id(dock_id)
+        raise StopIteration
 
 
 class SearchRequest:
@@ -148,20 +154,3 @@ class SearchEngine:
             stack.append(c)
 
         return stack.pop()
-
-
-if __name__ == "__main__":
-    import sys
-
-    if len(sys.argv) < 2:
-        print("Enter search request ... ")
-        exit(0)
-    response = SearchEngine.search(sys.argv[1])
-    res_dict = {}
-    for record in response:
-        print(record)
-        res_dict[record['title']] = record
-
-    with open(sys.argv[1], 'wb') as f:
-        import pickle
-        pickle.dump(res_dict, f)

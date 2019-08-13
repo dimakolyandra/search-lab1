@@ -140,3 +140,18 @@ def get_page_by_id(dock_id):
                     "url": "ERROR",
                     "id": dock_id
                 }
+
+
+def init_environ(cur_file):
+    data_dir = os.path.join(
+        os.path.dirname(os.path.abspath(cur_file)), "data")
+    os.environ['inverse'] = os.path.join(data_dir, "inverse.out")
+    os.environ['right'] = os.path.join(data_dir, "right.out")
+    os.environ['dict'] = os.path.join(data_dir, "dict.out")
+
+
+def init_logging(loglvl):
+    logging_lvl = loglvl or "info"
+    logging.basicConfig(
+        level=getattr(logging, logging_lvl.upper()),
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
