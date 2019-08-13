@@ -5,9 +5,6 @@ from search_engine_tf_idf.search_engine import SearchEngine as search_tf_idf
 from builder_utils import init_environ, run_test_for_stage, init_logging
 
 
-EXIT = "exit"
-
-
 def _init_argparser() -> ArgumentParser:
     text = "Script for ruling indexation process." \
            "Data structure in config.yml, input file with name data.in"
@@ -27,7 +24,7 @@ def _init_argparser() -> ArgumentParser:
 def do_search_circle(SearchEngine):
     while True:
         request = input("Enter search request, or exit: ")
-        if request == EXIT:
+        if request == "exit":
             print("Good By!")
             break
         response = SearchEngine.search(request)
