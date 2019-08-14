@@ -2,6 +2,7 @@ import os
 import pickle
 import hashlib
 import logging
+import sys
 
 from builder_utils import stage_logging, timer_debug, init_stage
 
@@ -34,7 +35,7 @@ def make_inverse_index(in_path, index_path, dict_path):
         for _, value in tokenisation.items():
             for token in value["tokens"]:
                 tokens.append(
-                    (token[0].decode("utf-8").lower(),
+                    (sys.intern(token[0].lower()),
                         (value["id"], token[1])))
     logging.debug(f"Got {len(tokens)} tokens from input, start sorting")
     logging.debug("Start sorting pair token-dockId")

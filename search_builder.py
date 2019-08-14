@@ -43,7 +43,7 @@ def _init_argparser() -> ArgumentParser:
     return parser
 
 
-def handle_stage_tests(stage):
+def handle_stage_tests(stage: str):
     if args.withtests:
         test_success = run_test_for_stage(stage)
         if not test_success:

@@ -34,7 +34,7 @@ def stage_logging(func):
     return wrapper
 
 
-def timer_debug(func, *args, **kwargs):
+def timer_debug(func: callable, *args, **kwargs):
     t1 = datetime.now()
     res = func(*args, **kwargs)
     t2 = datetime.now()
@@ -78,11 +78,11 @@ def init_stage(consts: dict, stage_id: int, with_logging: bool = True):
     return in_path, out_path
 
 
-def _get_hash(termin):
+def _get_hash(termin: str) -> str:
     return hashlib.md5(termin.encode('utf-8')).hexdigest()
 
 
-def get_page_ids_for_termin(termin, with_tf_df=False):
+def get_page_ids_for_termin(termin: str, with_tf_df: bool = False) -> set:
     with open(os.environ['inverse'], 'rb') as reverse_index, \
             open(os.environ['dict'], 'rb') as dictionary:
 
@@ -117,7 +117,7 @@ def get_page_ids_for_termin(termin, with_tf_df=False):
                 return result_pages
 
 
-def get_page_by_id(dock_id):
+def get_page_by_id(dock_id: int) -> dict:
     with open(os.environ["right"], 'rb') as right_index:
         while True:
             try:
@@ -142,7 +142,7 @@ def get_page_by_id(dock_id):
                 }
 
 
-def init_environ(cur_file):
+def init_environ(cur_file: str):
     data_dir = os.path.join(
         os.path.dirname(os.path.abspath(cur_file)), "data")
     os.environ['inverse'] = os.path.join(data_dir, "inverse.out")
@@ -150,8 +150,17 @@ def init_environ(cur_file):
     os.environ['dict'] = os.path.join(data_dir, "dict.out")
 
 
-def init_logging(loglvl):
+def init_logging(loglvl: str):
     logging_lvl = loglvl or "info"
+    log_formatter = logging.Formatter(
+        "%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+
+    file_handler = logging.FileHandler("indexing.log")
+    file_handler.setFormatter(log_formatter)
+
+    console_handler = logging.StreamHandler()
+    console_handler.setFormatter(log_formatter)
+
     logging.basicConfig(
         level=getattr(logging, logging_lvl.upper()),
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        handlers=[console_handler, file_handler])

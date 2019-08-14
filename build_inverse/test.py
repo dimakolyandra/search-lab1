@@ -3,6 +3,7 @@ import hashlib
 import logging
 import unittest
 import pickle
+import sys
 
 
 class TestBuildingIndex(unittest.TestCase):
@@ -74,7 +75,7 @@ class TestBuildingIndex(unittest.TestCase):
             logging.debug("Start circle of testing")
             for key in keys:
                 page_tokens = {hashlib.md5(
-                               t[0].decode().lower().encode()).hexdigest()
+                               sys.intern(t[0]).lower().encode()).hexdigest()
                                for t in pages[key]["tokens"]}
                 logging.debug(
                     f"Testing token with number {cur_token_count} "

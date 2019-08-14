@@ -3,6 +3,7 @@ import pickle
 import logging
 import re
 import urllib.parse
+import sys
 
 from builder_utils import stage_logging, timer_debug, init_stage
 
@@ -17,7 +18,7 @@ def tokenise(data: dict) -> dict:
         title = page["title"]
         tokens_data[title] = {
             "url": WIKI_URL_TEMPL.format(urllib.parse.quote(title)),
-            "tokens": [(t[1].group(0).encode('utf-8'), t[0])
+            "tokens": [(sys.intern(t[1].group(0)), t[0])
                        for t in enumerate(
                        re.finditer(regex_token, page["text"]), 1)],
             "id": page["id"]

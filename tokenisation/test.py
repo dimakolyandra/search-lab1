@@ -1,11 +1,14 @@
 import os
-import random
 import json
 import pickle
 import unittest
+import logging
+import sys
 
 
 class TestTokenisation(unittest.TestCase):
+
+    LOGGING_INTERVAL = 500
 
     @classmethod
     def setUp(cls):
@@ -18,7 +21,8 @@ class TestTokenisation(unittest.TestCase):
         cls.PAGE_COUNT = 50000
 
     def test_correct_data(self):
-        pages_id = random.choices(range(self.PAGE_COUNT), k=5)
+        pages_id = [1, 1000, 10000, 30000, 40000]
+        logging.debug("Start testing tokenisation stage")
         random_pages = None
         random_tokens = None
         with open(self.INPUT_FILE, encoding='utf-8') as in_:
@@ -30,15 +34,20 @@ class TestTokenisation(unittest.TestCase):
                              for key, value in tokens.items()
                              if value["id"] in pages_id}
         for title, page in random_tokens.items():
+            token_count = 0
+            logging.debug(f"Testing with page {page['id']}")
             for token in page["tokens"]:
+                if token_count % self.LOGGING_INTERVAL == 0:
+                    logging.debug(f"Process {token_count} token")
                 with self.subTest(
-                        token=token[0].decode('utf-8'), page_title=title):
+                        token=sys.intern(token[0]), page_title=title):
                     self.assertEqual(
                         page["id"], random_pages[page["id"]]["id"])
                     self.assertEqual(
                         title, random_pages[page["id"]]["title"])
                     text = random_pages[page["id"]]["text"]
-                    self.assertIn(token[0].decode('utf-8'), text)
+                    self.assertIn(sys.intern(token[0]), text)
+                token_count += 1
 
 
 if __name__ == "__main__":
