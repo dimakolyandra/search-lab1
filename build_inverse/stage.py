@@ -30,8 +30,7 @@ def make_inverse_index(in_path, index_path, dict_path):
     tokens = []
     with open(in_path, 'rb') as in_:
         tokenisation = pickle.load(in_)
-        # keys = set(list(tokenisation.keys())[:1000])
-        # tokenisation = {k: v for k, v in tokenisation.items() if k in keys}
+        logging.debug("Pickle data was load")
         for _, value in tokenisation.items():
             for token in value["tokens"]:
                 tokens.append(

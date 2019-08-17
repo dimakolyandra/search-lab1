@@ -1,5 +1,5 @@
 import re
-from search_engine.utils import get_page_ids_for_termin, get_page_by_id
+from builder_utils import get_page_ids_for_termin, get_page_by_id
 
 
 class SearchResult:
