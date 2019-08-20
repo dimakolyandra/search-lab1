@@ -1,15 +1,19 @@
 import logging
 import unittest
-
+from datetime import datetime
 from search_engine.search_engine import SearchEngine
 
 
 class TestSearchEngine(unittest.TestCase):
 
     def process_reques(self, request):
+        t1 = datetime.now()
         response = SearchEngine.search(request)
+        logging.info(
+            f"For request: {request} search takes: {datetime.now() - t1} ")
         res_count = len(response.dock_ids)
         logging.info(f"Result count for request '{request}' is: {res_count}")
+        logging.info("-" * 100)
         return res_count
 
     def test_empty_result(self):
@@ -46,3 +50,7 @@ class TestSearchEngine(unittest.TestCase):
 
         res_count_or = self.process_reques("война || война")
         self.assertEquals(res_count_one, res_count_or)
+
+    def test_full_pages(self):
+        count = self.process_reques("война || !война")
+        self.assertEquals(50000, count)

@@ -1,3 +1,5 @@
+import logging
+from datetime import datetime
 from argparse import ArgumentParser
 
 from search_engine.search_engine import SearchEngine as search_bool
@@ -27,7 +29,10 @@ def do_search_circle(SearchEngine):
         if request == "exit":
             print("Good By!")
             break
+        t1 = datetime.now()
         response = SearchEngine.search(request)
+        logging.debug(
+            f"For request: {request} search takes: {datetime.now() - t1} ")
         for record in response:
             if type(record) == tuple:
                 print(record[0])
@@ -37,7 +42,7 @@ def do_search_circle(SearchEngine):
             cmd = input("...")
             if cmd == "break":
                 break
-        print("\n" * 5)
+        print("\n" * 2)
 
 
 if __name__ == "__main__":

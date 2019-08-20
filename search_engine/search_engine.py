@@ -1,4 +1,5 @@
 import re
+import logging
 from builder_utils import get_page_ids_for_termin, get_page_by_id
 
 
@@ -27,14 +28,14 @@ class SearchResult:
         return SearchResult(self.dock_ids | another.dock_ids)
 
     def __iter__(self):
-        print(f"Found {len(self.dock_ids)} pages")
-        self.dock_ids_list = list(self.dock_ids)
+        print(f"Found {len(self.dock_ids) if self.dock_ids else 0} pages")
+        self.dock_ids_list = list(self.dock_ids or [])
         return self
 
     def __next__(self):
-        if self.iter_counter < len(self.dock_ids):
-            self.iter_counter += 1
+        if self.iter_counter < len(self.dock_ids_list):
             dock_id = self.dock_ids_list[self.iter_counter]
+            self.iter_counter += 1
             return get_page_by_id(dock_id)
         raise StopIteration
 
@@ -42,6 +43,7 @@ class SearchResult:
 class SearchRequest:
 
     PRIORITY = {
+        "!": 3,
         "&": 2,
         "|": 2,
         "(": 1,
@@ -54,6 +56,7 @@ class SearchRequest:
 
     def get_request(self) -> list:
         request = self._prepare_request()
+        logging.debug(f"Prepared request: {request}")
         if not self.is_valid(request):
             raise ValueError("Not valid request")
         return self._get_polish_inverse(request)
@@ -99,7 +102,7 @@ class SearchRequest:
 
         return result[:-1]
 
-    def is_valid(self, request: str) -> list:
+    def is_valid(self, request: str) -> bool:
         return True
 
     def _prepare_request(self) -> str:
@@ -110,7 +113,7 @@ class SearchRequest:
                        .replace('||', ' || ')
                        .replace('!', ' ! '))
 
-        res = list(filter(None, re.findall(r'[^\s]*', request)))
+        res: list = list(filter(None, re.findall(r'[^\s]*', request)))
         for i in range(len(res) - 1):
             result_request.append(res[i])
             if (res[i + 1] != "&&" and
