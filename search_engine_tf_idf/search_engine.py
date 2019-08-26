@@ -47,6 +47,7 @@ class SearchResult:
         print(f"Found {len(self.dock_ids)} pages")
         self.dock_ids_list = [(dock_id, tf_idf_val)
                               for dock_id, tf_idf_val in self.tf_idf.items()]
+        self.tf_idf.clear()
         self.dock_ids_list.sort(key=lambda x: -x[1])
         return self
 
@@ -55,6 +56,7 @@ class SearchResult:
             self.iter_counter += 1
             dock_id, tf_idf = self.dock_ids_list[self.iter_counter]
             return get_page_by_id(dock_id), tf_idf
+        self.iter_counter = 0
         raise StopIteration
 
 
