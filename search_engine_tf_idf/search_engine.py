@@ -113,10 +113,16 @@ class SearchRequest:
 
         return result[:-1]
 
-    def is_valid(self, request: str) -> list:
+    def is_valid(self, request: str) -> bool:
         return True
 
     def _prepare_request(self) -> str:
+        if ('&' not in self.raw_request and
+            '|' not in self.raw_request and
+                '!' not in self.raw_request):
+            res: list = list(
+                filter(None, re.findall(r'[^\s]*', self.raw_request)))
+            return '|'.join(res)
         result_request = []
         request = (self.raw_request.replace('(', ' ( ')
                        .replace(')', ' ) ')
@@ -143,7 +149,7 @@ class SearchRequest:
 class SearchEngine:
 
     @staticmethod
-    def search(request: str, only_count: bool) -> SearchResult:
+    def search(request: str) -> SearchResult:
         request_stack = SearchRequest(request).get_request()
         stack = list()
         for item in request_stack:
