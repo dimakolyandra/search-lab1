@@ -7,10 +7,15 @@ class SearchResult:
 
     PAGE_COUNT = 50000
     iter_counter = 0
+    tf_idf: dict = dict()
 
     def __init__(self, data, is_not=False):
         if type(data) == str:
             dock_ids = get_page_ids_for_termin(data, with_tf_df=True)
+            for dock_id, tf, df in dock_ids:
+                if dock_id not in self.tf_idf:
+                    self.tf_idf[dock_id] = 0
+                self.tf_idf[dock_id] += tf * log(self.PAGE_COUNT / df + 1)
             if is_not:
                 ids = self._get_dock_ids(dock_ids)
                 ids = set(range(self.PAGE_COUNT)) - ids
@@ -40,8 +45,8 @@ class SearchResult:
 
     def __iter__(self):
         print(f"Found {len(self.dock_ids)} pages")
-        self.dock_ids_list = [(dock_id, tf * log(self.PAGE_COUNT / df + 1))
-                              for dock_id, tf, df in self.dock_ids]
+        self.dock_ids_list = [(dock_id, tf_idf_val)
+                              for dock_id, tf_idf_val in self.tf_idf.items()]
         self.dock_ids_list.sort(key=lambda x: -x[1])
         return self
 
