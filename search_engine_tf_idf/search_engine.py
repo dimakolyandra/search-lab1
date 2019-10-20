@@ -4,6 +4,9 @@ from builder_utils import get_page_ids_for_termin, get_page_by_id
 from stemmer import Stemmer
 
 
+stemmer = Stemmer()
+
+
 class SearchResult:
 
     PAGE_COUNT = 50000
@@ -73,7 +76,6 @@ class SearchRequest:
 
     def __init__(self, request: str):
         self.raw_request = request
-        self.stemmer = Stemmer()
 
     def get_request(self) -> list:
         request = self._prepare_request()
@@ -141,10 +143,10 @@ class SearchRequest:
 
         res = list(filter(None, re.findall(r'[^\s]*', request)))
         for i in range(len(res) - 1):
-            if res[i].isalnum():
-                result_request.append(self.stemmer.stem(res[i].lower()))
-            else:
-                result_request.append(res[i])
+            # if res[i].isalnum():
+            #     result_request.append(self.stemmer.stem(res[i].lower()))
+            # else:
+            #     result_request.append(res[i])
             if (res[i + 1] != "&&" and
                     (res[i + 1].isalpha() or
                         res[i + 1] == "(" or
@@ -166,7 +168,7 @@ class SearchEngine:
         stack = list()
         for item in request_stack:
             if item.isalpha():
-                stack.append(SearchResult(item.lower()))
+                stack.append(SearchResult(stemmer.stem(item.lower())))
                 continue
 
             if item == "!":
