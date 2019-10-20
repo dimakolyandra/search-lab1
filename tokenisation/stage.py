@@ -14,15 +14,23 @@ WIKI_URL_TEMPL = "https://ru.wikipedia.org/wiki/{}"
 def tokenise(data: dict) -> dict:
     tokens_data = dict()
     regex_token = re.compile(r'\w+')
+    token_count = 0
     for page in data:
         title = page["title"]
+        # tokens = [(t[1].group(0), t[0])
+        #           for t in enumerate(
+        #               re.finditer(regex_token, page["text"]), 1)]
+
+        tokens = [(sys.intern(t[1].group(0)), t[0])
+                  for t in enumerate(
+                      re.finditer(regex_token, page["text"]), 1)]
         tokens_data[title] = {
             "url": WIKI_URL_TEMPL.format(urllib.parse.quote(title)),
-            "tokens": [(sys.intern(t[1].group(0)), t[0])
-                       for t in enumerate(
-                       re.finditer(regex_token, page["text"]), 1)],
+            "tokens": tokens,
             "id": page["id"]
         }
+        token_count += len(tokens)
+    logging.debug("Total size of tokens: %d", token_count)
     return tokens_data
 
 

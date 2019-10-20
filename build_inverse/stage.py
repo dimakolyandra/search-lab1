@@ -5,9 +5,9 @@ import logging
 import sys
 
 from builder_utils import stage_logging, timer_debug, init_stage
+from stemmer import Stemmer
 
-
-LOGGING_INTERVAL = 100000
+LOGGING_INTERVAL = 10000
 
 
 def save_tokens(token, docs, index_file, dict_file, offset, tf, df):
@@ -28,14 +28,23 @@ def save_tokens(token, docs, index_file, dict_file, offset, tf, df):
 
 def make_inverse_index(in_path, index_path, dict_path):
     tokens = []
+    stemmer = Stemmer()
     with open(in_path, 'rb') as in_:
         tokenisation = pickle.load(in_)
         logging.debug("Pickle data was load")
-        for _, value in tokenisation.items():
+        count_page_processed = 1
+        token_items = tokenisation.items()
+        for _, value in token_items:
             for token in value["tokens"]:
-                tokens.append(
-                    (sys.intern(token[0].lower()),
-                        (value["id"], token[1])))
+                if count_page_processed % LOGGING_INTERVAL == 0:
+                    logging.debug(
+                        f"Processed {count_page_processed}"
+                        f"from {len(token_items)}:")
+                    count_page_processed += 1
+                tokens.append((stemmer.stem(
+                    sys.intern(token[0].lower())),
+                    (value["id"], token[1])))
+            count_page_processed += 1
     logging.debug(f"Got {len(tokens)} tokens from input, start sorting")
     logging.debug("Start sorting pair token-dockId")
     tokens.sort(key=lambda x: (x[0], x[1][0]))
