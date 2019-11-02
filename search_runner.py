@@ -6,6 +6,8 @@ from search_engine.search_engine import SearchEngine as search_bool
 from search_engine_tf_idf.search_engine import SearchEngine as search_tf_idf
 from builder_utils import init_environ, run_test_for_stage, init_logging
 
+from stemmer import Stemmer
+
 
 def _init_argparser() -> ArgumentParser:
     text = "Script for ruling indexation process." \
@@ -24,8 +26,11 @@ def _init_argparser() -> ArgumentParser:
 
 
 def do_search_circle(SearchEngine):
+    stemmer = Stemmer()
     while True:
         request = input("Enter search request, or exit: ")
+        for token in request.split():
+            print(stemmer.stem(token), end=" ")
         if request == "exit":
             print("Good By!")
             break

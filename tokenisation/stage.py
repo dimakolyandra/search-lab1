@@ -17,10 +17,6 @@ def tokenise(data: dict) -> dict:
     token_count = 0
     for page in data:
         title = page["title"]
-        # tokens = [(t[1].group(0), t[0])
-        #           for t in enumerate(
-        #               re.finditer(regex_token, page["text"]), 1)]
-
         tokens = [(sys.intern(t[1].group(0)), t[0])
                   for t in enumerate(
                       re.finditer(regex_token, page["text"]), 1)]
