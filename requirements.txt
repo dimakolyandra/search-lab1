@@ -19,7 +19,7 @@ numpy==1.17.0
 openpyxl==2.6.3
 packaging==19.2
 pandas==0.25.1
-pipenv==2018.11.26
+pipenv==2022.1.8
 pluggy==0.13.0
 py==1.8.0
 pymystem3==0.2.0
